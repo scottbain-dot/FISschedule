@@ -359,7 +359,7 @@
                 if (left <= 5) $('fill').classList.add('danger');
                 else if (chg <= 5) $('fill').classList.add('warn');
                 
-                $('pLeft').textContent = `${left} min left`;
+                $('pLeft').textContent = nw ? `${left} min left` : `Change in ${chg} min • ${left} left`;
                 $('wIn').textContent = nw ? '' : (chg <= 0 ? 'NOW!' : `in ${chg} min`);
                 $('eIn').textContent = `in ${left} min`;
             } else {
