@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#874B46">
+    <title>FIS Period Timer</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --fis-burgundy: #874B46;
+            --fis-burgundy-light: #a65d57;
+            --fis-burgundy-dark: #6a3b37;
+            --fis-black: #231F20;
+            --fis-white: #ffffff;
+            --fis-gray: #f5f5f5;
+            --fis-gray-dark: #e0e0e0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--fis-white);
+            color: var(--fis-black);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 380px;
+            width: 100%;
+        }
+        
+        .header {
+            background: var(--fis-burgundy);
+            color: var(--fis-white);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .date-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .current-time {
+            font-size: 3rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+        }
+        
+        .day-period {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .day-letter {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 6px;
+        }
+        
+        .period-name {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 6px;
+        }
+        
+        .main-display {
+            background: var(--fis-gray);
+            border-radius: 12px;
+            padding: 24px 20px;
+            margin-bottom: 16px;
+        }
+        
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            height: 32px;
+            background: var(--fis-gray-dark);
+            border-radius: 16px;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--fis-burgundy);
+            border-radius: 16px;
+            transition: width 0.5s ease;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .progress-fill.warning-zone {
+            background: #d4a029;
+        }
+        
+        .progress-fill.end-zone {
+            background: #c0392b;
+        }
+        
+        .warning-marker {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            width: 4px;
+            background: var(--fis-black);
+            border-radius: 2px;
+            opacity: 0.4;
+            z-index: 2;
+        }
+        
+        .time-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .time-row .remaining {
+            font-weight: 600;
+            color: var(--fis-black);
+        }
+        
+        .key-times {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .key-time {
+            flex: 1;
+            background: var(--fis-white);
+            border-radius: 10px;
+            padding: 16px 12px;
+            border: 2px solid transparent;
+        }
+        
+        .key-time.warning {
+            border-color: #d4a029;
+        }
+        
+        .key-time.ending {
+            border-color: #c0392b;
+        }
+        
+        .key-time-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        
+        .key-time-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .key-time.warning .key-time-value {
+            color: #d4a029;
+        }
+        
+        .key-time.ending .key-time-value {
+            color: #c0392b;
+        }
+        
+        .key-time-countdown {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .grade-toggle {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .grade-btn {
+            background: var(--fis-gray);
+            border: 2px solid var(--fis-gray-dark);
+            color: #666;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .grade-btn.active {
+            background: var(--fis-burgundy);
+            border-color: var(--fis-burgundy);
+            color: var(--fis-white);
+        }
+        
+        .schedule-list {
+            background: var(--fis-gray);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+        }
+        
+        .schedule-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--fis-gray-dark);
+            font-size: 0.9rem;
+        }
+        
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+        
+        .schedule-item.current {
+            color: var(--fis-burgundy);
+            font-weight: 600;
+        }
+        
+        .schedule-item.past {
+            color: #bbb;
+        }
+        
+        .schedule-item .times {
+            color: inherit;
+            opacity: 0.7;
+        }
+        
+        .schedule-item.current .times {
+            opacity: 1;
+        }
+
+        .no-class {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        
+        .no-class-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .footer-btn {
+            background: transparent;
+            border: 1px solid var(--fis-gray-dark);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .footer-btn:hover {
+            border-color: var(--fis-burgundy);
+            color: var(--fis-burgundy);
+        }
+
+        .override-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--fis-gray);
+            border-radius: 8px;
+        }
+
+        .override-panel.show {
+            display: block;
+        }
+
+        .override-panel select {
+            background: var(--fis-white);
+            border: 1px solid var(--fis-gray-dark);
+            color: var(--fis-black);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-right: 8px;
+        }
+
+        .override-panel button {
+            background: var(--fis-burgundy);
+            border: none;
+            color: var(--fis-white);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .override-panel .clear-btn {
+            background: transparent;
+            border: 1px solid var(--fis-gray-dark);
+            color: #888;
+            margin-left: 8px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="grade-toggle">
+            <button class="grade-btn active" data-grade="6-8">Grade 6-8</button>
+            <button class="grade-btn" data-grade="9-12">Grade 9-12</button>
+        </div>
+        
+        <div class="header">
+            <div class="date-row">
+                <span id="dateInfo">Thursday, Jan 29</span>
+                <span id="dayLetter">Day D</span>
+            </div>
+            <div class="current-time" id="currentTime">08:56</div>
+            <div class="period-name" id="periodName">Period 1</div>
+        </div>
+        
+        <div class="main-display" id="mainDisplay">
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="warning-marker" id="warningMarker"></div>
+                </div>
+                <div class="time-row">
+                    <span id="progressStart">08:32</span>
+                    <span class="remaining" id="progressRemaining">24 min left</span>
+                    <span id="progressEnd">09:20</span>
+                </div>
+            </div>
+            
+            <div class="key-times" id="keyTimes">
+                <div class="key-time warning">
+                    <div class="key-time-label">Get Changed</div>
+                    <div class="key-time-value" id="warningTime">09:15</div>
+                    <div class="key-time-countdown" id="warningCountdown">in 19 min</div>
+                </div>
+                <div class="key-time ending">
+                    <div class="key-time-label">Period Ends</div>
+                    <div class="key-time-value" id="endTime">09:20</div>
+                    <div class="key-time-countdown" id="endCountdown">in 24 min</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="schedule-list">
+            <div class="schedule-header">Today's Schedule</div>
+            <div id="scheduleList"></div>
+        </div>
+
+        <div class="footer">
+            <button class="footer-btn" id="overrideBtn">Override Day</button>
+        </div>
+        
+        <div class="override-panel" id="overridePanel">
+            <select id="daySelect">
+                <option value="">Use calendar</option>
+                <option value="A">Day A</option>
+                <option value="B">Day B</option>
+                <option value="C">Day C</option>
+                <option value="D">Day D</option>
+                <option value="E">Day E</option>
+                <option value="F">Day F</option>
+                <option value="G">Day G</option>
+                <option value="H">Day H</option>
+            </select>
+            <button id="applyOverride">Apply</button>
+            <button class="clear-btn" id="clearOverride">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        // Letter day calendar from spreadsheet
+        const letterDays = {
+            '2025-08-14': 'A', '2025-08-15': 'B', '2025-08-18': 'C', '2025-08-19': 'D',
+            '2025-08-20': 'E', '2025-08-21': 'F', '2025-08-22': 'G', '2025-08-25': 'H',
+            '2025-08-26': 'A', '2025-08-27': 'B', '2025-08-28': 'C', '2025-08-29': 'D',
+            '2025-09-01': 'E', '2025-09-02': 'F', '2025-09-03': 'G', '2025-09-04': 'H',
+            '2025-09-05': 'A', '2025-09-08': 'B', '2025-09-09': 'C', '2025-09-10': 'D',
+            '2025-09-11': 'E', '2025-09-12': 'F', '2025-09-15': 'G', '2025-09-16': 'H',
+            '2025-09-17': 'A', '2025-09-18': 'B', '2025-09-19': 'C', '2025-09-22': 'D',
+            '2025-09-23': 'E', '2025-09-24': 'F', '2025-09-25': 'G', '2025-09-26': 'H',
+            '2025-10-13': 'A', '2025-10-14': 'B', '2025-10-15': 'C', '2025-10-16': 'D',
+            '2025-10-17': 'E', '2025-10-20': 'F', '2025-10-21': 'G', '2025-10-22': 'H',
+            '2025-10-23': 'A', '2025-10-24': 'B', '2025-10-27': 'C', '2025-10-28': 'D',
+            '2025-10-29': 'E', '2025-10-30': 'F', '2025-10-31': 'G', '2025-11-03': 'H',
+            '2025-11-04': 'A', '2025-11-05': 'B', '2025-11-06': 'C', '2025-11-07': 'D',
+            '2025-11-10': 'E', '2025-11-11': 'F', '2025-11-12': 'G', '2025-11-13': 'H',
+            '2025-11-14': 'A', '2025-11-17': 'B', '2025-11-18': 'C', '2025-11-19': 'D',
+            '2025-11-20': 'E', '2025-11-21': 'F', '2025-11-24': 'G', '2025-11-25': 'H',
+            '2025-12-01': 'A', '2025-12-02': 'B', '2025-12-03': 'C', '2025-12-04': 'D',
+            '2025-12-05': 'E', '2025-12-08': 'F', '2025-12-09': 'G', '2025-12-10': 'H',
+            '2025-12-11': 'A', '2025-12-12': 'B', '2025-12-15': 'C', '2025-12-16': 'D',
+            '2025-12-17': 'E', '2025-12-18': 'F', '2025-12-19': 'G',
+            '2026-01-12': 'H', '2026-01-13': 'A', '2026-01-14': 'B', '2026-01-15': 'C',
+            '2026-01-16': 'D', '2026-01-19': 'E', '2026-01-20': 'F', '2026-01-21': 'G',
+            '2026-01-22': 'H', '2026-01-26': 'A', '2026-01-27': 'B', '2026-01-28': 'C',
+            '2026-01-29': 'D', '2026-01-30': 'E', '2026-02-02': 'F', '2026-02-03': 'G',
+            '2026-02-04': 'H', '2026-02-05': 'A', '2026-02-06': 'B', '2026-02-09': 'C',
+            '2026-02-10': 'D', '2026-02-11': 'E', '2026-02-12': 'F', '2026-02-13': 'G',
+            '2026-02-23': 'H', '2026-02-24': 'A', '2026-02-25': 'B', '2026-02-26': 'C',
+            '2026-02-27': 'D', '2026-03-02': 'E', '2026-03-03': 'F', '2026-03-04': 'G',
+            '2026-03-05': 'H', '2026-03-06': 'A', '2026-03-09': 'B', '2026-03-10': 'C',
+            '2026-03-11': 'D', '2026-03-12': 'E', '2026-03-13': 'F', '2026-03-16': 'G',
+            '2026-03-17': 'H', '2026-03-18': 'A', '2026-03-19': 'B', '2026-03-20': 'C',
+            '2026-03-23': 'D', '2026-03-24': 'E', '2026-03-25': 'F', '2026-03-26': 'G',
+            '2026-03-27': 'H', '2026-04-13': 'A', '2026-04-14': 'B', '2026-04-15': 'C',
+            '2026-04-16': 'D', '2026-04-17': 'E', '2026-04-20': 'F', '2026-04-21': 'G',
+            '2026-04-22': 'H', '2026-04-23': 'A', '2026-04-24': 'B', '2026-04-27': 'C',
+            '2026-04-28': 'D', '2026-04-29': 'E', '2026-04-30': 'F', '2026-05-04': 'G',
+            '2026-05-05': 'H', '2026-05-06': 'A', '2026-05-07': 'B', '2026-05-08': 'C',
+            '2026-05-11': 'D', '2026-05-12': 'E', '2026-05-13': 'F', '2026-05-18': 'G',
+            '2026-05-19': 'H', '2026-05-20': 'A', '2026-05-21': 'B', '2026-05-22': 'C',
+            '2026-05-26': 'D', '2026-05-27': 'E', '2026-05-28': 'F', '2026-05-29': 'G',
+            '2026-06-01': 'H', '2026-06-02': 'A', '2026-06-03': 'B', '2026-06-04': 'C',
+            '2026-06-05': 'D', '2026-06-08': 'E', '2026-06-09': 'F', '2026-06-10': 'G',
+            '2026-06-11': 'H', '2026-06-12': 'A'
+        };
+
+        // Schedule definitions
+        const schedule68 = {
+            monday: [
+                { name: 'Advisory', start: [8, 32], end: [8, 42], noWarning: true },
+                { name: 'Period 1', start: [8, 45], end: [9, 35] },
+                { name: 'Period 2', start: [9, 40], end: [10, 30] },
+                { name: 'Break', start: [10, 30], end: [10, 50], noWarning: true },
+                { name: 'Period 3', start: [10, 50], end: [11, 40] },
+                { name: 'Period 4a', start: [11, 45], end: [12, 30] },
+                { name: 'Lunch', start: [12, 30], end: [13, 20], noWarning: true },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ],
+            tueThu: [
+                { name: 'Period 1', start: [8, 32], end: [9, 20] },
+                { name: 'Period 2', start: [9, 25], end: [10, 10] },
+                { name: 'Advisory', start: [10, 15], end: [10, 45], noWarning: true },
+                { name: 'Break', start: [10, 45], end: [11, 5], noWarning: true },
+                { name: 'Period 3', start: [11, 5], end: [11, 50] },
+                { name: 'Period 4a', start: [11, 55], end: [12, 40] },
+                { name: 'Lunch', start: [12, 40], end: [13, 25], noWarning: true },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ],
+            wedFri: [
+                { name: 'Period 1', start: [8, 32], end: [9, 30] },
+                { name: 'Period 2', start: [9, 35], end: [10, 30] },
+                { name: 'Break', start: [10, 30], end: [10, 50], noWarning: true },
+                { name: 'Period 3', start: [10, 50], end: [11, 40] },
+                { name: 'Period 4a', start: [11, 45], end: [12, 30] },
+                { name: 'Lunch', start: [12, 30], end: [13, 20], noWarning: true },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ]
+        };
+
+        const schedule912 = {
+            monday: [
+                { name: 'Advisory', start: [8, 32], end: [8, 42], noWarning: true },
+                { name: 'Period 1', start: [8, 45], end: [9, 35] },
+                { name: 'Period 2', start: [9, 40], end: [10, 30] },
+                { name: 'Break', start: [10, 30], end: [10, 50], noWarning: true },
+                { name: 'Period 3', start: [10, 50], end: [11, 40] },
+                { name: 'Lunch', start: [11, 40], end: [12, 30], noWarning: true },
+                { name: 'Period 4b', start: [12, 30], end: [13, 20] },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ],
+            tueThu: [
+                { name: 'Period 1', start: [8, 32], end: [9, 20] },
+                { name: 'Period 2', start: [9, 25], end: [10, 10] },
+                { name: 'Advisory', start: [10, 15], end: [10, 45], noWarning: true },
+                { name: 'Break', start: [10, 45], end: [11, 5], noWarning: true },
+                { name: 'Period 3', start: [11, 5], end: [11, 50] },
+                { name: 'Lunch', start: [11, 50], end: [12, 35], noWarning: true },
+                { name: 'Period 4b', start: [12, 35], end: [13, 20] },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ],
+            wedFri: [
+                { name: 'Period 1', start: [8, 32], end: [9, 30] },
+                { name: 'Period 2', start: [9, 35], end: [10, 30] },
+                { name: 'Break', start: [10, 30], end: [10, 50], noWarning: true },
+                { name: 'Period 3', start: [10, 50], end: [11, 40] },
+                { name: 'Lunch', start: [11, 40], end: [12, 30], noWarning: true },
+                { name: 'Period 4b', start: [12, 30], end: [13, 20] },
+                { name: 'Period 5', start: [13, 25], end: [14, 15] },
+                { name: 'Period 6', start: [14, 20], end: [15, 10] }
+            ]
+        };
+
+        let currentGrade = localStorage.getItem('fisTimerGrade') || '6-8';
+        let dayOverride = localStorage.getItem('fisTimerDayOverride') || null;
+
+        function getDateString(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function getLetterDay(date) {
+            if (dayOverride) return dayOverride;
+            return letterDays[getDateString(date)] || null;
+        }
+
+        function getDayType(date) {
+            const day = date.getDay();
+            if (day === 1) return 'monday';
+            if (day === 2 || day === 4) return 'tueThu';
+            if (day === 3 || day === 5) return 'wedFri';
+            return null;
+        }
+
+        function getSchedule(grade, dayType) {
+            const schedules = grade === '6-8' ? schedule68 : schedule912;
+            return schedules[dayType] || [];
+        }
+
+        function timeToMinutes(hour, minute) {
+            return hour * 60 + minute;
+        }
+
+        function formatTime(hour, minute) {
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        }
+
+        function formatCountdown(minutes) {
+            if (minutes <= 0) return 'now';
+            if (minutes < 60) return `in ${minutes} min`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `in ${h}h ${m}m`;
+        }
+
+        function getCurrentPeriod(schedule, now) {
+            const currentMinutes = timeToMinutes(now.getHours(), now.getMinutes());
+            
+            for (let i = 0; i < schedule.length; i++) {
+                const period = schedule[i];
+                const startMinutes = timeToMinutes(period.start[0], period.start[1]);
+                const endMinutes = timeToMinutes(period.end[0], period.end[1]);
+                
+                if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+                    return { period, index: i, status: 'during' };
+                }
+                
+                if (currentMinutes < startMinutes) {
+                    return { period, index: i, status: 'before' };
+                }
+            }
+            
+            return { period: null, index: -1, status: 'after' };
+        }
+
+        function update() {
+            const now = new Date();
+            const letterDay = getLetterDay(now);
+            const dayType = getDayType(now);
+            
+            // Date info
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            document.getElementById('dateInfo').textContent = `${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}`;
+            
+            const dayLetterEl = document.getElementById('dayLetter');
+            const periodNameEl = document.getElementById('periodName');
+            const progressSection = document.getElementById('progressSection');
+            const keyTimes = document.getElementById('keyTimes');
+            const scheduleList = document.getElementById('scheduleList');
+            
+            if (!letterDay || !dayType) {
+                dayLetterEl.textContent = 'No School';
+                periodNameEl.textContent = '';
+                progressSection.classList.add('hidden');
+                keyTimes.classList.add('hidden');
+                scheduleList.innerHTML = '<div class="no-class"><div class="no-class-icon">📚</div>No classes today</div>';
+                return;
+            }
+            
+            dayLetterEl.textContent = `Day ${letterDay}`;
+            
+            const schedule = getSchedule(currentGrade, dayType);
+            const { period, index, status } = getCurrentPeriod(schedule, now);
+            const currentMinutes = timeToMinutes(now.getHours(), now.getMinutes());
+            
+            // Schedule list
+            let scheduleHTML = '';
+            schedule.forEach((p, i) => {
+                let className = 'schedule-item';
+                const endMinutes = timeToMinutes(p.end[0], p.end[1]);
+                if (i === index && status === 'during') {
+                    className += ' current';
+                } else if (endMinutes <= currentMinutes) {
+                    className += ' past';
+                }
+                scheduleHTML += `
+                    <div class="${className}">
+                        <span>${p.name}</span>
+                        <span class="times">${formatTime(p.start[0], p.start[1])} – ${formatTime(p.end[0], p.end[1])}</span>
+                    </div>
+                `;
+            });
+            scheduleList.innerHTML = scheduleHTML;
+            
+            if (status === 'after') {
+                periodNameEl.textContent = 'Day Complete';
+                progressSection.classList.add('hidden');
+                keyTimes.classList.add('hidden');
+                return;
+            }
+            
+            if (status === 'before') {
+                periodNameEl.textContent = `Next: ${period.name}`;
+                progressSection.classList.add('hidden');
+                keyTimes.classList.remove('hidden');
+                
+                const startMinutes = timeToMinutes(period.start[0], period.start[1]);
+                const endMinutes = timeToMinutes(period.end[0], period.end[1]);
+                const minsUntilStart = startMinutes - currentMinutes;
+                
+                document.getElementById('warningTime').textContent = period.noWarning ? '--:--' : formatTime(period.end[0], period.end[1] - 5);
+                document.getElementById('endTime').textContent = formatTime(period.end[0], period.end[1]);
+                document.getElementById('warningCountdown').textContent = period.noWarning ? '' : `starts ${formatCountdown(minsUntilStart)}`;
+                document.getElementById('endCountdown').textContent = `starts ${formatCountdown(minsUntilStart)}`;
+                return;
+            }
+            
+            // During a period
+            periodNameEl.textContent = period.name;
+            progressSection.classList.remove('hidden');
+            keyTimes.classList.remove('hidden');
+            
+            const startMinutes = timeToMinutes(period.start[0], period.start[1]);
+            const endMinutes = timeToMinutes(period.end[0], period.end[1]);
+            const totalDuration = endMinutes - startMinutes;
+            const elapsed = currentMinutes - startMinutes;
+            const percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            const minsUntilEnd = endMinutes - currentMinutes;
+            const minsUntilWarning = minsUntilEnd - 5;
+            
+            // Progress bar
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percentage + '%';
+            progressFill.classList.remove('warning-zone', 'end-zone');
+            if (minsUntilEnd <= 5) {
+                progressFill.classList.add('end-zone');
+            } else if (minsUntilWarning <= 5) {
+                progressFill.classList.add('warning-zone');
+            }
+            
+            // Warning marker position (marks where 5 min warning falls on the bar)
+            const warningMarker = document.getElementById('warningMarker');
+            if (period.noWarning) {
+                warningMarker.style.display = 'none';
+            } else {
+                warningMarker.style.display = 'block';
+                // Position at (totalDuration - 5) / totalDuration of the bar width
+                const warningPercent = ((totalDuration - 5) / totalDuration) * 100;
+                warningMarker.style.left = `calc(${warningPercent}% - 2px)`;
+            }
+            
+            // Progress labels
+            document.getElementById('progressStart').textContent = formatTime(period.start[0], period.start[1]);
+            document.getElementById('progressEnd').textContent = formatTime(period.end[0], period.end[1]);
+            document.getElementById('progressRemaining').textContent = `${minsUntilEnd} min left`;
+            
+            // Key times
+            if (period.noWarning) {
+                document.getElementById('warningTime').textContent = '--:--';
+                document.getElementById('warningCountdown').textContent = '';
+            } else {
+                document.getElementById('warningTime').textContent = formatTime(period.end[0], period.end[1] - 5);
+                document.getElementById('warningCountdown').textContent = minsUntilWarning <= 0 ? 'NOW' : formatCountdown(minsUntilWarning);
+            }
+            
+            document.getElementById('endTime').textContent = formatTime(period.end[0], period.end[1]);
+            document.getElementById('endCountdown').textContent = formatCountdown(minsUntilEnd);
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('currentTime').textContent = `${h}:${m}`;
+        }
+
+        // Grade toggle
+        document.querySelectorAll('.grade-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentGrade = btn.dataset.grade;
+                localStorage.setItem('fisTimerGrade', currentGrade);
+                update();
+            });
+        });
+
+        // Load saved grade
+        if (currentGrade) {
+            document.querySelectorAll('.grade-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.grade === currentGrade);
+            });
+        }
+
+        // Override controls
+        document.getElementById('overrideBtn').addEventListener('click', () => {
+            document.getElementById('overridePanel').classList.toggle('show');
+        });
+
+        document.getElementById('applyOverride').addEventListener('click', () => {
+            const selected = document.getElementById('daySelect').value;
+            if (selected) {
+                dayOverride = selected;
+                localStorage.setItem('fisTimerDayOverride', selected);
+            } else {
+                dayOverride = null;
+                localStorage.removeItem('fisTimerDayOverride');
+            }
+            update();
+        });
+
+        document.getElementById('clearOverride').addEventListener('click', () => {
+            dayOverride = null;
+            localStorage.removeItem('fisTimerDayOverride');
+            document.getElementById('daySelect').value = '';
+            update();
+        });
+
+        if (dayOverride) {
+            document.getElementById('daySelect').value = dayOverride;
+        }
+
+        // Init
+        updateClock();
+        update();
+        setInterval(updateClock, 1000);
+        setInterval(update, 10000);
+    </script>
+</body>
+</html>
