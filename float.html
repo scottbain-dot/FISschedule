@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIS Timer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --burgundy: #874B46;
+            --white: #ffffff;
+            --gray: #f5f5f5;
+            --gray2: #e0e0e0;
+            --warn: #d4a029;
+            --danger: #c0392b;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gray);
+            padding: 10px;
+        }
+        
+        .container { width: 260px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .toggle { display: flex; gap: 6px; justify-content: center; }
+        .toggle button {
+            background: var(--white);
+            border: 2px solid var(--gray2);
+            color: #888;
+            padding: 4px 14px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .toggle button.on {
+            background: var(--burgundy);
+            border-color: var(--burgundy);
+            color: var(--white);
+        }
+        
+        .header {
+            background: var(--burgundy);
+            color: var(--white);
+            padding: 12px 14px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .header-top { display: flex; justify-content: space-between; font-size: 0.7rem; opacity: 0.9; }
+        .time { font-size: 2.8rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.1; }
+        .period { font-size: 0.95rem; margin-top: 2px; opacity: 0.95; }
+        
+        .progress { background: var(--white); border-radius: 10px; padding: 8px 10px; }
+        .bar { height: 18px; background: var(--gray); border-radius: 9px; position: relative; }
+        .fill { height: 100%; background: var(--burgundy); border-radius: 9px; position: absolute; left: 0; transition: width 0.5s; }
+        .fill.warn { background: var(--warn); }
+        .fill.danger { background: var(--danger); }
+        .marker { position: absolute; top: 3px; bottom: 3px; width: 2px; background: #000; border-radius: 1px; opacity: 0.25; }
+        .labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.65rem; color: #888; }
+        .labels .mid { font-weight: 700; color: #231F20; font-size: 0.75rem; }
+        
+        .boxes { display: flex; gap: 6px; }
+        .box { flex: 1; background: var(--white); border-radius: 10px; padding: 8px 6px; text-align: center; border: 2px solid var(--gray2); }
+        .box.warn { border-color: var(--warn); }
+        .box.danger { border-color: var(--danger); }
+        .box-label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; color: #999; }
+        .box-time { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .box.warn .box-time { color: var(--warn); }
+        .box.danger .box-time { color: var(--danger); }
+        .box-sub { font-size: 0.55rem; color: #999; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toggle">
+            <button class="on" data-g="6-8">Grade 6-8</button>
+            <button data-g="9-12">Grade 9-12</button>
+        </div>
+        <div class="header">
+            <div class="header-top"><span id="date">Thu, Jan 29</span><span id="day">Day D</span></div>
+            <div class="time" id="time">10:32</div>
+            <div class="period" id="period">Advisory</div>
+        </div>
+        <div class="progress" id="prog">
+            <div class="bar"><div class="fill" id="fill"></div><div class="marker" id="marker"></div></div>
+            <div class="labels"><span id="pStart">10:15</span><span class="mid" id="pLeft">13 min left</span><span id="pEnd">10:45</span></div>
+        </div>
+        <div class="boxes" id="boxes">
+            <div class="box warn"><div class="box-label">Get Changed</div><div class="box-time" id="wTime">--:--</div><div class="box-sub" id="wIn"></div></div>
+            <div class="box danger"><div class="box-label">Period Ends</div><div class="box-time" id="eTime">10:45</div><div class="box-sub" id="eIn">in 13 min</div></div>
+        </div>
+    </div>
+    <script>
+        const LD={'2025-08-14':'A','2025-08-15':'B','2025-08-18':'C','2025-08-19':'D','2025-08-20':'E','2025-08-21':'F','2025-08-22':'G','2025-08-25':'H','2025-08-26':'A','2025-08-27':'B','2025-08-28':'C','2025-08-29':'D','2025-09-01':'E','2025-09-02':'F','2025-09-03':'G','2025-09-04':'H','2025-09-05':'A','2025-09-08':'B','2025-09-09':'C','2025-09-10':'D','2025-09-11':'E','2025-09-12':'F','2025-09-15':'G','2025-09-16':'H','2025-09-17':'A','2025-09-18':'B','2025-09-19':'C','2025-09-22':'D','2025-09-23':'E','2025-09-24':'F','2025-09-25':'G','2025-09-26':'H','2025-10-13':'A','2025-10-14':'B','2025-10-15':'C','2025-10-16':'D','2025-10-17':'E','2025-10-20':'F','2025-10-21':'G','2025-10-22':'H','2025-10-23':'A','2025-10-24':'B','2025-10-27':'C','2025-10-28':'D','2025-10-29':'E','2025-10-30':'F','2025-10-31':'G','2025-11-03':'H','2025-11-04':'A','2025-11-05':'B','2025-11-06':'C','2025-11-07':'D','2025-11-10':'E','2025-11-11':'F','2025-11-12':'G','2025-11-13':'H','2025-11-14':'A','2025-11-17':'B','2025-11-18':'C','2025-11-19':'D','2025-11-20':'E','2025-11-21':'F','2025-11-24':'G','2025-11-25':'H','2025-12-01':'A','2025-12-02':'B','2025-12-03':'C','2025-12-04':'D','2025-12-05':'E','2025-12-08':'F','2025-12-09':'G','2025-12-10':'H','2025-12-11':'A','2025-12-12':'B','2025-12-15':'C','2025-12-16':'D','2025-12-17':'E','2025-12-18':'F','2025-12-19':'G','2026-01-12':'H','2026-01-13':'A','2026-01-14':'B','2026-01-15':'C','2026-01-16':'D','2026-01-19':'E','2026-01-20':'F','2026-01-21':'G','2026-01-22':'H','2026-01-26':'A','2026-01-27':'B','2026-01-28':'C','2026-01-29':'D','2026-01-30':'E','2026-02-02':'F','2026-02-03':'G','2026-02-04':'H','2026-02-05':'A','2026-02-06':'B','2026-02-09':'C','2026-02-10':'D','2026-02-11':'E','2026-02-12':'F','2026-02-13':'G','2026-02-23':'H','2026-02-24':'A','2026-02-25':'B','2026-02-26':'C','2026-02-27':'D','2026-03-02':'E','2026-03-03':'F','2026-03-04':'G','2026-03-05':'H','2026-03-06':'A','2026-03-09':'B','2026-03-10':'C','2026-03-11':'D','2026-03-12':'E','2026-03-13':'F','2026-03-16':'G','2026-03-17':'H','2026-03-18':'A','2026-03-19':'B','2026-03-20':'C','2026-03-23':'D','2026-03-24':'E','2026-03-25':'F','2026-03-26':'G','2026-03-27':'H','2026-04-13':'A','2026-04-14':'B','2026-04-15':'C','2026-04-16':'D','2026-04-17':'E','2026-04-20':'F','2026-04-21':'G','2026-04-22':'H','2026-04-23':'A','2026-04-24':'B','2026-04-27':'C','2026-04-28':'D','2026-04-29':'E','2026-04-30':'F','2026-05-04':'G','2026-05-05':'H','2026-05-06':'A','2026-05-07':'B','2026-05-08':'C','2026-05-11':'D','2026-05-12':'E','2026-05-13':'F','2026-05-18':'G','2026-05-19':'H','2026-05-20':'A','2026-05-21':'B','2026-05-22':'C','2026-05-26':'D','2026-05-27':'E','2026-05-28':'F','2026-05-29':'G','2026-06-01':'H','2026-06-02':'A','2026-06-03':'B','2026-06-04':'C','2026-06-05':'D','2026-06-08':'E','2026-06-09':'F','2026-06-10':'G','2026-06-11':'H','2026-06-12':'A'};
+        const S={'6-8':{mon:[[8,32,8,42,'Advisory',1],[8,45,9,35,'Period 1'],[9,40,10,30,'Period 2'],[10,30,10,50,'Break',1],[10,50,11,40,'Period 3'],[11,45,12,30,'Period 4a'],[12,30,13,20,'Lunch',1],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']],tt:[[8,32,9,20,'Period 1'],[9,25,10,10,'Period 2'],[10,15,10,45,'Advisory',1],[10,45,11,5,'Break',1],[11,5,11,50,'Period 3'],[11,55,12,40,'Period 4a'],[12,40,13,25,'Lunch',1],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']],wf:[[8,32,9,30,'Period 1'],[9,35,10,30,'Period 2'],[10,30,10,50,'Break',1],[10,50,11,40,'Period 3'],[11,45,12,30,'Period 4a'],[12,30,13,20,'Lunch',1],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']]},'9-12':{mon:[[8,32,8,42,'Advisory',1],[8,45,9,35,'Period 1'],[9,40,10,30,'Period 2'],[10,30,10,50,'Break',1],[10,50,11,40,'Period 3'],[11,40,12,30,'Lunch',1],[12,30,13,20,'Period 4b'],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']],tt:[[8,32,9,20,'Period 1'],[9,25,10,10,'Period 2'],[10,15,10,45,'Advisory',1],[10,45,11,5,'Break',1],[11,5,11,50,'Period 3'],[11,50,12,35,'Lunch',1],[12,35,13,20,'Period 4b'],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']],wf:[[8,32,9,30,'Period 1'],[9,35,10,30,'Period 2'],[10,30,10,50,'Break',1],[10,50,11,40,'Period 3'],[11,40,12,30,'Lunch',1],[12,30,13,20,'Period 4b'],[13,25,14,15,'Period 5'],[14,20,15,10,'Period 6']]}};
+        let g=localStorage.getItem('fg')||'6-8';
+        const $=id=>document.getElementById(id);
+        const f=(h,m)=>`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        const tm=(h,m)=>h*60+m;
+        const dt=d=>{const x=d.getDay();return x===1?'mon':(x===2||x===4)?'tt':(x===3||x===5)?'wf':null;};
+        function upd(){
+            const now=new Date(),ds=now.toISOString().split('T')[0],ld=LD[ds],dy=dt(now);
+            $('date').textContent=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()]+', '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()]+' '+now.getDate();
+            $('time').textContent=f(now.getHours(),now.getMinutes());
+            if(!ld||!dy){$('day').textContent='';$('period').textContent='No School';$('prog').classList.add('hidden');$('boxes').classList.add('hidden');return;}
+            $('day').textContent='Day '+ld;$('prog').classList.remove('hidden');$('boxes').classList.remove('hidden');
+            const sc=S[g][dy],cur=tm(now.getHours(),now.getMinutes());
+            let p=null,st='after';
+            for(let i=0;i<sc.length;i++){const x=sc[i],s=tm(x[0],x[1]),e=tm(x[2],x[3]);if(cur>=s&&cur<e){p=x;st='during';break;}if(cur<s){p=x;st='before';break;}}
+            if(st==='after'){$('period').textContent='Day Complete';$('prog').classList.add('hidden');$('boxes').classList.add('hidden');return;}
+            const s=tm(p[0],p[1]),e=tm(p[2],p[3]),dur=e-s,left=e-cur,chg=left-5,nw=p[5];
+            if(st==='before'){$('period').textContent='Next: '+p[4];$('fill').style.width='0%';$('marker').style.display='none';$('pStart').textContent=f(p[0],p[1]);$('pEnd').textContent=f(p[2],p[3]);$('pLeft').textContent='starts in '+(s-cur)+' min';$('wTime').textContent=nw?'--:--':f(p[2],p[3]-5);$('wIn').textContent='';$('eTime').textContent=f(p[2],p[3]);$('eIn').textContent='in '+(s-cur)+' min';}
+            else{$('period').textContent=p[4];$('fill').style.width=((cur-s)/dur)*100+'%';$('fill').classList.remove('warn','danger');if(left<=5)$('fill').classList.add('danger');else if(chg<=5)$('fill').classList.add('warn');$('marker').style.display=nw?'none':'block';$('marker').style.left='calc('+((dur-5)/dur)*100+'% - 1px)';$('pStart').textContent=f(p[0],p[1]);$('pEnd').textContent=f(p[2],p[3]);$('pLeft').textContent=left+' min left';$('wTime').textContent=nw?'--:--':f(p[2],p[3]-5);$('wIn').textContent=nw?'':(chg<=0?'NOW!':'in '+chg+' min');$('eTime').textContent=f(p[2],p[3]);$('eIn').textContent='in '+left+' min';}
+        }
+        document.querySelectorAll('.toggle button').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.toggle button').forEach(x=>x.classList.remove('on'));b.classList.add('on');g=b.dataset.g;localStorage.setItem('fg',g);upd();});b.classList.toggle('on',b.dataset.g===g);});
+        upd();setInterval(upd,1000);
+    </script>
+</body>
+</html>
