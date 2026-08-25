@@ -394,7 +394,7 @@
                 $('time').textContent = f(now.getHours(), now.getMinutes());
             }
             
-            if (!ld || !dy) {
+            if (!dy) {
                 $('day').textContent = '';
                 $('period').textContent = 'No School';
                 $('periodLen').textContent = '';
@@ -403,8 +403,8 @@
                 $('sched').innerHTML = '<div style="text-align:center;padding:30px;color:#888">No classes today</div>';
                 return;
             }
-            
-            $('day').textContent = `Day ${ld}`;
+
+            $('day').textContent = ld ? `Day ${ld}` : '';
             const sc = S[g][dy];
             currentSchedule = sc;
             const cur = tm(now.getHours(), now.getMinutes());
